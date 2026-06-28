@@ -1,0 +1,83 @@
+name: open-webui-stack
+
+services:
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    restart: unless-stopped
+
+    environment:
+      TZ: ${TZ}
+      WEBUI_URL: "https://chat.faithmeats.org"
+      WEBUI_SECRET_KEY: ${WEBUI_SECRET_KEY}
+
+      # Trust the email Cloudflare Access injects (origin is loopback-only below,
+      # so this header cannot be forged from outside the tunnel).
+      WEBUI_AUTH_TRUSTED_EMAIL_HEADER: "Cf-Access-Authenticated-User-Email"
+
+      # Allura memory bridge registered as a GLOBAL tool server (mcpo -> brain).
+      # Users still enable it per-chat via the "+" menu (global tools are hidden by default).
+      TOOL_SERVER_CONNECTIONS: '[{"type":"openapi","url":"http://allura-mcpo:8000","spec_type":"url","spec":"","path":"openapi.json","auth_type":"none","key":"","config":{"enable":true},"info":{"id":"allura-memory","name":"Allura Memory","description":"FaithMeats governed org memory. Pass group_id=allura-faithmeats on every call."}}]'
+
+      # Business/security defaults
+      ENABLE_SIGNUP: ${ENABLE_SIGNUP}
+      DEFAULT_USER_ROLE: "user"
+      ENABLE_PASSWORD_VALIDATION: ${ENABLE_PASSWORD_VALIDATION}
+      PASSWORD_VALIDATION_REGEX_PATTERN: ${PASSWORD_VALIDATION_REGEX_PATTERN}
+      PASSWORD_VALIDATION_HINT: ${PASSWORD_VALIDATION_HINT}
+
+      # Faster failure if a bad model endpoint is configured
+      AIOHTTP_CLIENT_TIMEOUT_MODEL_LIST: ${AIOHTTP_CLIENT_TIMEOUT_MODEL_LIST}
+
+      # 4 GB box: do NOT download/run a local embedding model at boot.
+      # Leaves RAG off until you point embeddings at a cloud provider.
+      RAG_EMBEDDING_ENGINE: "ollama"
+      RAG_EMBEDDING_MODEL_AUTO_UPDATE: "false"
+
+      # Optional first-boot admin creation.
+      # Blank these out after the first successful login.
+      WEBUI_ADMIN_EMAIL: ${WEBUI_ADMIN_EMAIL}
+      WEBUI_ADMIN_NAME: ${WEBUI_ADMIN_NAME}
+      WEBUI_ADMIN_PASSWORD: ${WEBUI_ADMIN_PASSWORD}
+
+    volumes:
+      - open-webui-data:/app/backend/data
+
+    expose:
+      - "8080"
+
+    # Loopback only — reachable solely via the Cloudflare tunnel (closes LAN bypass).
+    ports:
+      - "127.0.0.1:8080:8080"
+
+    # Tuned for a 4 GB / Pentium Silver N5030 box
+    mem_limit: 1200m
+    mem_reservation: 512m
+    cpus: "1.50"
+
+    security_opt:
+      - no-new-privileges:true
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared-open-webui
+    restart: unless-stopped
+
+    command: tunnel --no-autoupdate run
+
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN}
+
+    depends_on:
+      - open-webui
+
+    mem_limit: 256m
+    mem_reservation: 64m
+    cpus: "0.50"
+
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  open-webui-data:
+    name: open-webui-data

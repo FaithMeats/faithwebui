@@ -1,0 +1,6 @@
+# Quick-tunnel mode for testing — gives a random trycloudflare.com URL.
+# No Cloudflare account or token required. Delete this file (and edit .env)
+# when you switch to a named tunnel on chat.faithmeats.com.
+services:
+  cloudflared:
+    command: tunnel --no-autoupdate --url http://open-webui:8080
