@@ -1,3 +1,63 @@
+<!--
+  FaithMeats fork header — prepended above the upstream Open WebUI README.
+  Per the Open WebUI License, the "Open WebUI" branding below is preserved intact.
+  Edit only this fenced Faith Meats section; leave the upstream content untouched
+  so `git merge upstream/dev` stays clean.
+-->
+
+# FaitWebUI — Faith Meats' Open WebUI
+
+> **Fork of [`open-webui/open-webui`](https://github.com/open-webui/open-webui).** This is the chat front-end
+> Faith Meats staff and partners use. It tracks upstream Open WebUI (see the full upstream README below) and
+> carries Faith Meats deployment wiring. Repo: [`FaithMeats/faitwebui`](https://github.com/FaithMeats/faitwebui).
+
+## How Faith Meats runs it
+
+The live chat lives at **`https://chat.faithmeats.org`** and is served on a small (4 GB, Pentium Silver N5030)
+laptop. Deployment config is **not** in this repo — it lives in `open-webui-stack/faithmeats-deploy/`
+(`docker-compose.yml`). The running container is the upstream `ghcr.io/open-webui/open-webui:main` image;
+this fork exists for source-level customization when we need it.
+
+| Concern | How it's set up |
+|---------|-----------------|
+| **Auth** | Trusted-header SSO — Open WebUI trusts the `Cf-Access-Authenticated-User-Email` header. Signup is closed; new users default to the `user` role. |
+| **Exposure** | Container binds **loopback only** (`127.0.0.1:8080`). The *only* way in is the **Cloudflare Tunnel** → `chat.faithmeats.org`. This closes any LAN/origin bypass — the trusted header can't be forged from outside the tunnel. |
+| **Admin** | First-boot admin seeded via `WEBUI_ADMIN_*` env; thereafter managed in the DB. Admin identity = the Cloudflare Access email (kept out of this README). |
+| **RAG** | Embeddings point at Ollama (`RAG_EMBEDDING_ENGINE=ollama`) — no local embedding model is downloaded at boot, to fit the 4 GB box. |
+
+### Tool servers (mcpo bridges)
+
+Three OpenAPI tool servers are wired in globally (users enable them per-chat via the **+** menu; hidden by default).
+The live config is stored in the DB via the admin API/UI — `TOOL_SERVER_CONNECTIONS` in compose only seeds a fresh volume.
+
+| Tool server | Container | What it does |
+|-------------|-----------|--------------|
+| **Allura Memory** | `allura-mcpo:8000` | Faith Meats governed org memory. Every call passes `group_id=allura-faith-meats`. |
+| **FaithClaw Assistant** | `faithclaw-mcpo:8000` | Chat with the FaithClaw agent (Fatima) — gate-enforced (MONEY / CONTRACTS / CLAIMS / SHIP / EMAIL). See [`FaithMeats/faithclaw`](https://github.com/FaithMeats/faithclaw). |
+| **Web & Notion Search (read-only)** | `openwebui-ro-mcpo:8000` | Read-only research: Notion search/reads, Tavily + Exa web search. No write tools exist on this surface. |
+
+### Operating it
+
+```bash
+# From the deploy repo, not this one:
+cd open-webui-stack/faithmeats-deploy
+
+docker compose up -d          # start Open WebUI + Cloudflare tunnel
+docker compose logs -f open-webui
+docker compose pull && docker compose up -d   # update to latest upstream :main
+```
+
+### Keeping the fork in sync with upstream
+
+```bash
+git fetch upstream
+git merge upstream/dev        # keep this Faith Meats section; take upstream everywhere else
+```
+
+---
+
+<sub>Everything below is the upstream Open WebUI README, preserved per the Open WebUI License.</sub>
+
 # Open WebUI 👋
 
 ![GitHub stars](https://img.shields.io/github/stars/open-webui/open-webui?style=social)
