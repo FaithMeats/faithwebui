@@ -1,0 +1,13 @@
+# Secrets — never commit
+.env
+.env.*
+*.env
+!*.env.example
+
+# The staged OAuth file has a hardcoded (leaked) secret — do not push
+*.staged
+
+# Local/runtime
+backups/
+*.bak
+*.log
