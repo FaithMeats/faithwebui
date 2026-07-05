@@ -15,9 +15,11 @@ services:
       # so this header cannot be forged from outside the tunnel).
       WEBUI_AUTH_TRUSTED_EMAIL_HEADER: "Cf-Access-Authenticated-User-Email"
 
-      # Allura memory bridge registered as a GLOBAL tool server (mcpo -> brain).
-      # Users still enable it per-chat via the "+" menu (global tools are hidden by default).
-      TOOL_SERVER_CONNECTIONS: '[{"type":"openapi","url":"http://allura-mcpo:8000","spec_type":"url","spec":"","path":"openapi.json","auth_type":"none","key":"","config":{"enable":true},"info":{"id":"allura-memory","name":"Allura Memory","description":"FaithMeats governed org memory. Pass group_id=allura-faithmeats on every call."}}]'
+      # Global tool servers (mcpo bridges). NOTE: persistent config — after first
+      # boot the live value is managed in the DB via the admin API/UI; this env
+      # only seeds a fresh volume. Kept in sync manually (last: 2026-07-04).
+      # Users still enable tools per-chat via the "+" menu (hidden by default).
+      TOOL_SERVER_CONNECTIONS: '[{"type":"openapi","url":"http://allura-mcpo:8000","spec_type":"url","spec":"","path":"openapi.json","auth_type":"none","key":"","config":{"enable":true},"info":{"id":"allura-memory","name":"Allura Memory","description":"FaithMeats governed org memory. Pass group_id=allura-faith-meats on every call."}},{"type":"openapi","url":"http://faithclaw-mcpo:8000","spec_type":"url","spec":"","path":"openapi.json","auth_type":"none","key":"","config":{"enable":true},"info":{"id":"faithclaw-chat","name":"FaithClaw Assistant","description":"Chat with FaithClaw, the Faith Meats agent (gate-enforced). Send a message, get the assistant reply."}},{"type":"openapi","url":"http://openwebui-ro-mcpo:8000","spec_type":"url","spec":"","path":"openapi.json","auth_type":"none","key":"","config":{"enable":true},"info":{"id":"openwebui-ro","name":"Web & Notion Search (read-only)","description":"Read-only research tools: Notion search/reads, Tavily web search, Exa web search. No write tools exist on this surface."}}]'
 
       # Business/security defaults
       ENABLE_SIGNUP: ${ENABLE_SIGNUP}
