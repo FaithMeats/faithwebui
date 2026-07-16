@@ -22,6 +22,7 @@ services:
       TOOL_SERVER_CONNECTIONS: '[{"type":"openapi","url":"http://allura-mcpo:8000","spec_type":"url","spec":"","path":"openapi.json","auth_type":"none","key":"","config":{"enable":true},"info":{"id":"allura-memory","name":"Allura Memory","description":"FaithMeats governed org memory. Pass group_id=allura-faith-meats on every call."}},{"type":"openapi","url":"http://faithclaw-mcpo:8000","spec_type":"url","spec":"","path":"openapi.json","auth_type":"none","key":"","config":{"enable":true},"info":{"id":"faithclaw-chat","name":"FaithClaw Assistant","description":"Chat with FaithClaw, the Faith Meats agent (gate-enforced). Send a message, get the assistant reply."}},{"type":"openapi","url":"http://openwebui-ro-mcpo:8000","spec_type":"url","spec":"","path":"openapi.json","auth_type":"none","key":"","config":{"enable":true},"info":{"id":"openwebui-ro","name":"Web & Notion Search (read-only)","description":"Read-only research tools: Notion search/reads, Tavily web search, Exa web search. No write tools exist on this surface."}}]'
 
       # Business/security defaults
+      ENABLE_API_KEYS: "true"
       ENABLE_SIGNUP: ${ENABLE_SIGNUP}
       DEFAULT_USER_ROLE: "user"
       ENABLE_PASSWORD_VALIDATION: ${ENABLE_PASSWORD_VALIDATION}
@@ -47,6 +48,10 @@ services:
 
     expose:
       - "8080"
+
+    # Allow container to reach host-side services (Hermes API server on :8642)
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
     # Loopback only — reachable solely via the Cloudflare tunnel (closes LAN bypass).
     ports:
@@ -77,6 +82,46 @@ services:
     mem_reservation: 64m
     cpus: "0.50"
 
+    security_opt:
+      - no-new-privileges:true
+
+  gog-mcpo-info:
+    image: ghcr.io/open-webui/mcpo:main
+    container_name: gog-mcpo-info
+    restart: unless-stopped
+    command: ["--host", "0.0.0.0", "--port", "8000", "--name", "Gmail - Info", "--description", "info@faithmeats.com inbox", "--", "/gog", "mcp", "--allow-write"]
+    environment:
+      GOG_KEYRING_BACKEND: file
+      GOG_KEYRING_PASSWORD: ${GOG_KEYRING_PASSWORD}
+      GOG_ACCOUNT: info@faithmeats.com
+    volumes:
+      - /home/roninhub/.local/bin/gog:/gog:ro
+      - /home/roninhub/.local/share/gogcli:/root/.local/share/gogcli
+    expose:
+      - "8000"
+    mem_limit: 256m
+    mem_reservation: 64m
+    cpus: "0.50"
+    security_opt:
+      - no-new-privileges:true
+
+  gog-mcpo-purchasing:
+    image: ghcr.io/open-webui/mcpo:main
+    container_name: gog-mcpo-purchasing
+    restart: unless-stopped
+    command: ["--host", "0.0.0.0", "--port", "8000", "--name", "Gmail - Purchasing", "--description", "purchasing@faithmeats.com inbox", "--", "/gog", "mcp", "--allow-write"]
+    environment:
+      GOG_KEYRING_BACKEND: file
+      GOG_KEYRING_PASSWORD: ${GOG_KEYRING_PASSWORD}
+      GOG_ACCOUNT: purchasing@faithmeats.com
+    volumes:
+      - /home/roninhub/.local/bin/gog:/gog:ro
+      - /home/roninhub/.local/share/gogcli:/root/.local/share/gogcli
+    expose:
+      - "8000"
+    mem_limit: 256m
+    mem_reservation: 64m
+    cpus: "0.50"
     security_opt:
       - no-new-privileges:true
 
